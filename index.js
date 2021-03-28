@@ -2,7 +2,7 @@ const {fixPages} = require('./lib');
 module.exports = function ({ pages = 'build', assets = 'build' } = {}) {
   /** @type {import('@sveltejs/kit').Adapter} */
   const adapter = {
-    name: '@sveltejs/adapter-static',
+    name: 'sveltejs-adapter-ipfs',
 
     async adapt(builder) {
       builder.copy_static_files(assets);
@@ -13,7 +13,7 @@ module.exports = function ({ pages = 'build', assets = 'build' } = {}) {
         dest: pages
       });
 
-      fixPages(pages);
+      fixPages(pages, assets);
     }
   };
 

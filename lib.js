@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const slash = require('slash');
 
 const traverse = function (
   dir,
@@ -32,9 +33,16 @@ const traverse = function (
 };
 
 
-function fixPages(folder) {
+function fixPages(pageFolder, appFolder) {
 
-  const pages = traverse(folder).filter((file) => file.name === 'index.html');
+  if (!pageFolder) {
+    pageFolder = "build"
+  }
+  if (!appFolder) {
+    appFolder = pageFolder;
+  }
+
+  const pages = traverse(pageFolder).filter((file) => file.name === 'index.html');
 
   const findSrc = 'src="/';
   const reSrc = new RegExp(findSrc, 'g');
@@ -52,50 +60,78 @@ function fixPages(folder) {
   const findRelpath = 'window.relpath="/';
   const reRelpath = new RegExp(findRelpath, 'g');
 
+
+  const linkReloadScript = `
+    <script>
+      // ensure we save href as they are loaded, so they do not change on page navigation
+      document.querySelectorAll("link[href]").forEach((v) => v.href = v.href);
+    </script>
+`;
+
   for (const page of pages) {
-    const indexHTMLPath = path.join(folder, page.relativePath);
+    const indexHTMLPath = path.join(pageFolder, page.relativePath);
     const indexHTMLContent = fs.readFileSync(indexHTMLPath).toString();
 
-    const indexHTMLFolder = path.dirname(page.relativePath);
+    const pageIndexHTMLURLPath = slash(page.relativePath);
+    const pageURLPath = path.dirname(pageIndexHTMLURLPath);
+    let numSegment = 0;
     let baseHref = '';
-    if (indexHTMLFolder != '' && indexHTMLFolder != '.' && indexHTMLFolder != './') {
-      const numSlashes = page.relativePath.split('/').length - 1;
+    if (pageURLPath != '' && pageURLPath != '.' && pageURLPath != './') {
+      const numSlashes = pageURLPath.split('/').length - 1;
+      numSegment ++;
       baseHref = '../';
       for (let i = 0; i < numSlashes; i++) {
         baseHref += '../';
+        numSegment ++;
       }
     }
 
-    console.log({baseHref, indexHTMLFolder, indexHTMLPath})
+    // console.log({baseHref, pageURLPath, indexHTMLPath, pageIndexHTMLURLPath})
 
-    const newIndexHTMLContent = indexHTMLContent
+    const findBase = `{"base":""`;
+    const reBase = new RegExp(findBase, 'g');
+
+    // console.log({normalised, split, sliced, str, numSegment: ${numSegment}});
+    const baseFunc = `(() => {
+      const normalised = (location.pathname.endsWith("/") ? location.pathname.substr(0, location.pathname.length -1) : location.pathname).substr(1);
+      const split = normalised.split('/');
+      const sliced = ${numSegment} ? split.slice(0, ${-(numSegment)}) : split;
+      const str = (sliced.length > 0 && sliced[0] !== "") ? "/" + sliced.join('/') : "";
+      return str;
+    })()`;
+
+    let newIndexHTMLContent = indexHTMLContent
       .replace(reSrc, 'src="' + baseHref)
       .replace(reHref, 'href="' + baseHref)
       .replace(reContent, 'content="' + baseHref)
       .replace(reFromImport, 'from "' + baseHref)
-      .replace(reDynamicImport, 'import("' + baseHref);
+      .replace(reDynamicImport, 'import("' + baseHref)
+      .replace(reBase, `{"base": ${baseFunc}`);
 
     // newIndexHTMLContent = newIndexHTMLContent.replace(reRelpath, 'window.relpath="' + baseHref);
+
+    const headEnd = newIndexHTMLContent.indexOf('</head>');
+    newIndexHTMLContent =
+    newIndexHTMLContent.slice(0, headEnd) +
+      `${linkReloadScript}` +
+      newIndexHTMLContent.slice(headEnd);
 
     fs.writeFileSync(indexHTMLPath, newIndexHTMLContent);
   }
 
+  const appJSFiles = traverse(path.join(appFolder, '_app')).filter((file) => file.name.endsWith(".js"));
+  for (const jsFile of appJSFiles) {
+    if (jsFile.name.startsWith('start-')) {
+      const filePath = path.join(appFolder, '_app', jsFile.relativePath);
+      // console.log({name: jsFile.name, filePath})
+      const content = fs.readFileSync(filePath).toString();
+      const newContent = content.replace('location.pathname.endsWith("/")&&"/"!==location.pathname&&history.replaceState({},"",`${location.pathname.slice(0,-1)}${location.search}`),', '!location.pathname.endsWith("/")&&history.replaceState({},"",`${location.pathname + "/"}${location.search}`),');
+      fs.writeFileSync(filePath, newContent);
+    }
 
-  // const assets = fs.readdirSync(path.join(exportFolder, '_assets'));
-  // const findAssetPaths = '"/_assets';
-  // const reAssetPaths = new RegExp(findAssetPaths, 'g');
-  // for (const asset of assets) {
-  //   if (asset.endsWith('.js')) {
-  //     const assetPath = path.join(exportFolder, '_assets', asset);
-  //     fs.writeFileSync(
-  //       assetPath,
-  //       fs
-  //         .readFileSync(assetPath)
-  //         .toString()
-  //         .replace(reAssetPaths, 'window.basepath+"_assets')
-  //     );
-  //   }
-  // }
+  }
+
+
 }
 
 module.exports = {
