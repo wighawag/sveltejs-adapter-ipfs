@@ -4,11 +4,11 @@ module.exports = function ({ pages = 'build', assets = 'build' } = {}) {
   const adapter = {
     name: 'sveltejs-adapter-ipfs',
 
-    async adapt(builder) {
-      builder.copy_static_files(assets);
-      builder.copy_client_files(assets);
+    async adapt(utils) {
+      utils.copy_static_files(assets);
+      utils.copy_client_files(assets);
 
-      await builder.prerender({
+      await utils.prerender({
         force: true,
         dest: pages
       });
