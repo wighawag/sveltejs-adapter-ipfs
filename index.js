@@ -1,5 +1,5 @@
 const {fixPages} = require('./lib');
-module.exports = function ({ pages = 'build', assets = 'build' } = {}) {
+module.exports = function ({ pages = 'build', assets = 'build', removeBuiltInServiceWorkerRegistration = false, injectPagesInServiceWorker = false } = {}) {
   /** @type {import('@sveltejs/kit').Adapter} */
   const adapter = {
     name: 'sveltejs-adapter-ipfs',
@@ -13,7 +13,7 @@ module.exports = function ({ pages = 'build', assets = 'build' } = {}) {
         dest: pages
       });
 
-      fixPages(pages, assets);
+      fixPages({pages, assets, removeBuiltInServiceWorkerRegistration, injectPagesInServiceWorker});
     }
   };
 

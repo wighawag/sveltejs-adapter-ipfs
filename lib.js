@@ -33,16 +33,10 @@ const traverse = function (
 };
 
 
-function fixPages(pageFolder, appFolder) {
+function fixPages(options) {
+  const {pages, assets, removeBuiltInServiceWorkerRegistration, injectPagesInServiceWorker} = options;
 
-  if (!pageFolder) {
-    pageFolder = "build"
-  }
-  if (!appFolder) {
-    appFolder = pageFolder;
-  }
-
-  const pages = traverse(pageFolder).filter((file) => file.name === 'index.html');
+  const filtered = traverse(pages).filter((file) => file.name === 'index.html');
 
   const findSrc = 'src="/';
   const reSrc = new RegExp(findSrc, 'g');
@@ -68,8 +62,10 @@ function fixPages(pageFolder, appFolder) {
     </script>
 `;
 
-  for (const page of pages) {
-    const indexHTMLPath = path.join(pageFolder, page.relativePath);
+  const pageURLs = [];
+
+  for (const page of filtered) {
+    const indexHTMLPath = path.join(pages, page.relativePath);
     const indexHTMLContent = fs.readFileSync(indexHTMLPath).toString();
 
     const pageIndexHTMLURLPath = slash(page.relativePath);
@@ -85,6 +81,19 @@ function fixPages(pageFolder, appFolder) {
         numSegment ++;
       }
     }
+    if (pageURLPath === '.') {
+      pageURLs.push('/');
+    } else {
+      let url = pageURLPath;
+      if (!url.startsWith('/')) {
+        url = "/" + url;
+      }
+      if (!url.endsWith('/')) {
+        url = url + '/';
+      }
+      pageURLs.push(url);
+    }
+
 
     // console.log({baseHref, pageURLPath, indexHTMLPath, pageIndexHTMLURLPath})
 
@@ -119,18 +128,41 @@ function fixPages(pageFolder, appFolder) {
     fs.writeFileSync(indexHTMLPath, newIndexHTMLContent);
   }
 
-  const appJSFiles = traverse(path.join(appFolder, '_app')).filter((file) => file.name.endsWith(".js"));
+  const appJSFiles = traverse(path.join(assets, '_app')).filter((file) => file.name.endsWith(".js"));
   for (const jsFile of appJSFiles) {
     if (jsFile.name.startsWith('start-')) {
-      const filePath = path.join(appFolder, '_app', jsFile.relativePath);
+      const filePath = path.join(assets, '_app', jsFile.relativePath);
       // console.log({name: jsFile.name, filePath})
       const content = fs.readFileSync(filePath).toString();
-      const newContent = content.replace('location.pathname.endsWith("/")&&"/"!==location.pathname&&history.replaceState({},"",`${location.pathname.slice(0,-1)}${location.search}`),', '!location.pathname.endsWith("/")&&history.replaceState({},"",`${location.pathname + "/"}${location.search}`),');
+      // this transformation make sure path ends with a slash
+      const SLASH_REMOVAL_CODE = 'location.pathname.endsWith("/")&&"/"!==location.pathname&&history.replaceState({},"",`${location.pathname.slice(0,-1)}${location.search}`),';
+      const SLASH_APPENDING_CODE = '!location.pathname.endsWith("/")&&history.replaceState({},"",`${location.pathname + "/"}${location.search}`),';
+      let newContent = content;
+      if (newContent.indexOf(SLASH_REMOVAL_CODE) === -1) {
+        // console.warn('could not find slash removal code, svelte-kit might have been updated with different code. if so sveltejs-adapter-ipfs need to be updated');
+      } else {
+        newContent = newContent.replace(SLASH_REMOVAL_CODE, SLASH_APPENDING_CODE);
+      }
+      if (removeBuiltInServiceWorkerRegistration) {
+        // this transformation remove auto service worker registration, allowing you to provide your own
+        const SERVICE_WORKER_REGISTRATION_CODE = '"serviceWorker"in navigator&&navigator.serviceWorker.register("/service-worker.js");';
+        if (newContent.indexOf(SERVICE_WORKER_REGISTRATION_CODE) === -1) {
+          // console.warn('could not find service worker registration code, svelte-kit might have been updated with different code. if so sveltejs-adapter-ipfs need to be updated');
+        } else {
+          newContent = newContent.replace(SERVICE_WORKER_REGISTRATION_CODE, '');
+        }
+      }
       fs.writeFileSync(filePath, newContent);
     }
 
   }
 
+  if (injectPagesInServiceWorker) {
+    const filePath = path.join(pages, 'service-worker.js');
+    const content = fs.readFileSync(filePath).toString();
+    const newContent = content.replace('"_INJECT_PAGES_"', `"${pageURLs.join('","')}"`)
+    fs.writeFileSync(filePath, newContent);
+  }
 
 }
 
