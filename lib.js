@@ -108,17 +108,20 @@ export function fixPages(options) {
 
     // console.log({baseHref, pageURLPath, indexHTMLPath, pageIndexHTMLURLPath})
 
+    const windowBaseScript = `
+    <script>
+      window.BASE = (() => {
+        const normalised = (location.pathname.endsWith("/") ? location.pathname.substr(0, location.pathname.length -1) : location.pathname).substr(1);
+        const split = normalised.split('/');
+        const sliced = ${numSegment} ? split.slice(0, ${-(numSegment)}) : split;
+        const str = (sliced.length > 0 && sliced[0] !== "") ? "/" + sliced.join('/') : "";
+        return str;
+      })();
+    </script>
+`;
+
     const findBase = `{"base":""`;
     const reBase = new RegExp(findBase, 'g');
-
-    // console.log({normalised, split, sliced, str, numSegment: ${numSegment}});
-    const baseFunc = `(() => {
-      const normalised = (location.pathname.endsWith("/") ? location.pathname.substr(0, location.pathname.length -1) : location.pathname).substr(1);
-      const split = normalised.split('/');
-      const sliced = ${numSegment} ? split.slice(0, ${-(numSegment)}) : split;
-      const str = (sliced.length > 0 && sliced[0] !== "") ? "/" + sliced.join('/') : "";
-      return str;
-    })()`;
 
     let newIndexHTMLContent = indexHTMLContent
       .replace(reSrc, 'src="' + baseHref)
@@ -126,15 +129,16 @@ export function fixPages(options) {
       .replace(reContent, 'content="' + baseHref)
       .replace(reFromImport, 'from "' + baseHref)
       .replace(reDynamicImport, 'import("' + baseHref)
-      .replace(reBase, `{"base": ${baseFunc}`);
+      .replace(reBase, `{"base": window.BASE`);
 
-    // newIndexHTMLContent = newIndexHTMLContent.replace(reRelpath, 'window.relpath="' + baseHref);
 
-    const headEnd = newIndexHTMLContent.indexOf('</head>');
+    const firstScript = newIndexHTMLContent.indexOf('<script');
     newIndexHTMLContent =
-    newIndexHTMLContent.slice(0, headEnd) +
-      `${linkReloadScript}` +
-      newIndexHTMLContent.slice(headEnd);
+    newIndexHTMLContent.slice(0, firstScript) +
+    `${windowBaseScript}` +
+    `${linkReloadScript}` +
+      newIndexHTMLContent.slice(firstScript);
+
 
     fs.writeFileSync(indexHTMLPath, newIndexHTMLContent);
   }
@@ -147,10 +151,9 @@ export function fixPages(options) {
       const content = fs.readFileSync(filePath).toString();
       let newContent = content;
 
-      // replace /_app with ./_app
       const find = "\"/_app";
       const re = new RegExp(find, 'g');
-      newContent = newContent.replace(re, '"./_app')
+      newContent = newContent.replace(re, 'window.BASE + "/_app')
 
       // fix transformation
       const BROKEN = 'history.replaceState({},"",`${a.path}${location.search}`)';
@@ -162,15 +165,7 @@ export function fixPages(options) {
       }
 
 
-      // this transformation make sure path ends with a slash
-      // const SLASH_REMOVAL_CODE = 'location.pathname.endsWith("/")&&"/"!==location.pathname&&history.replaceState({},"",`${location.pathname.slice(0,-1)}${location.search}`),';
-      // const SLASH_APPENDING_CODE = '!location.pathname.endsWith("/")&&history.replaceState({},"",`${location.pathname + "/"}${location.search}`),';
-      // if (newContent.indexOf(SLASH_REMOVAL_CODE) === -1) {
-      //   // console.warn('could not find slash removal code, svelte-kit might have been updated with different code. if so sveltejs-adapter-ipfs need to be updated');
-      // } else {
-      //   newContent = newContent.replace(SLASH_REMOVAL_CODE, SLASH_APPENDING_CODE);
-      // }
-
+      // TODO try trailingSLash: ignore, trailingSlash: always is broken on static adapter
       const TO_REMOVE = 'if("/"!==a.path){const t=a.path.endsWith("/");(t&&"never"===this.trailing_slash||!t&&"always"===this.trailing_slash&&!a.path.split("/").pop().includes("."))&&(a.path=t?a.path.slice(0,-1):a.path+"/",history.replaceState({},"",`${this.base}${a.path}${location.search}`))}';
       if (newContent.indexOf(TO_REMOVE) === -1) {
         // console.warn('could not find code to remove, svelte-kit might have been updated with different code. if so sveltejs-adapter-ipfs need to be updated');
