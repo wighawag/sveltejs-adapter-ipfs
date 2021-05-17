@@ -193,6 +193,31 @@ export function fixPages(options) {
 
   }
 
+  const appCSSFiles = traverse(path.join(assets, '_app')).filter((file) => file.name.endsWith(".css"));
+  for (const cssFile of appCSSFiles) {
+    const filePath = path.join(assets, '_app', cssFile.relativePath);
+    // console.log(cssFile);
+    const content = fs.readFileSync(filePath).toString();
+    let newContent = content;
+
+    const regex = /url\((\/_app\/.*?)\)/g;
+    let m;
+    while ((m = regex.exec(content)) !== null) {
+        // This is necessary to avoid infinite loops with zero-width matches
+        if (m.index === regex.lastIndex) {
+            regex.lastIndex++;
+        }
+
+        const url = m[1];
+        if (url) {
+          const p = path.join("/_app", path.dirname(cssFile.relativePath));
+          const rel = path.relative(p, url);
+          newContent = newContent.replace(url, rel);
+        }
+    }
+    fs.writeFileSync(filePath, newContent);
+  }
+
   if (injectPagesInServiceWorker) {
     const filePath = path.join(pages, 'service-worker.js');
     try {
