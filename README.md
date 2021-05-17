@@ -22,3 +22,15 @@ This is based on adapter-static but add a post-processing step that do the follo
 
 
 Some of these are not specific to ipfs but this also illustrate what is missing in svelte kit
+
+
+# DEMO
+
+repo : https://github.com/wighawag/sveltekit-ipfs-demo
+
+
+Hosted :
+
+on root path: https://bafybeifzv5mf7s5ccs6ah2ozdlag5irxpzv7lax5sesxonsxsosk43pmbq.ipfs.dweb.link/
+
+on hash path: https://cloudflare-ipfs.com/ipfs/bafybeifzv5mf7s5ccs6ah2ozdlag5irxpzv7lax5sesxonsxsosk43pmbq/
