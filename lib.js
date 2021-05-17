@@ -1,6 +1,17 @@
-const fs = require('fs');
-const path = require('path');
-const slash = require('slash');
+import fs from 'fs';
+import path from 'path';
+// import slash from 'slash';
+
+function slash(path) {
+	const isExtendedLengthPath = /^\\\\\?\\/.test(path);
+	const hasNonAscii = /[^\u0000-\u0080]+/.test(path); // eslint-disable-line no-control-regex
+
+	if (isExtendedLengthPath || hasNonAscii) {
+		return path;
+	}
+
+	return path.replace(/\\/g, '/');
+}
 
 const traverse = function (
   dir,
@@ -33,7 +44,7 @@ const traverse = function (
 };
 
 
-function fixPages(options) {
+export function fixPages(options) {
   const {pages, assets, removeBuiltInServiceWorkerRegistration, injectPagesInServiceWorker} = options;
 
   const filtered = traverse(pages).filter((file) => file.name === 'index.html');
@@ -134,15 +145,40 @@ function fixPages(options) {
       const filePath = path.join(assets, '_app', jsFile.relativePath);
       // console.log({name: jsFile.name, filePath})
       const content = fs.readFileSync(filePath).toString();
-      // this transformation make sure path ends with a slash
-      const SLASH_REMOVAL_CODE = 'location.pathname.endsWith("/")&&"/"!==location.pathname&&history.replaceState({},"",`${location.pathname.slice(0,-1)}${location.search}`),';
-      const SLASH_APPENDING_CODE = '!location.pathname.endsWith("/")&&history.replaceState({},"",`${location.pathname + "/"}${location.search}`),';
       let newContent = content;
-      if (newContent.indexOf(SLASH_REMOVAL_CODE) === -1) {
-        // console.warn('could not find slash removal code, svelte-kit might have been updated with different code. if so sveltejs-adapter-ipfs need to be updated');
+
+      // replace /_app with ./_app
+      const find = "\"/_app";
+      const re = new RegExp(find, 'g');
+      newContent = newContent.replace(re, '"./_app')
+
+      // fix transformation
+      const BROKEN = 'history.replaceState({},"",`${a.path}${location.search}`)';
+      const FIXED = 'history.replaceState({},"",`${this.base}${a.path}${location.search}`)';
+      if (newContent.indexOf(BROKEN) === -1) {
+        // console.warn('could not find broken code, svelte-kit might have been updated with different code. if so sveltejs-adapter-ipfs need to be updated');
       } else {
-        newContent = newContent.replace(SLASH_REMOVAL_CODE, SLASH_APPENDING_CODE);
+        newContent = newContent.replace(BROKEN, FIXED);
       }
+
+
+      // this transformation make sure path ends with a slash
+      // const SLASH_REMOVAL_CODE = 'location.pathname.endsWith("/")&&"/"!==location.pathname&&history.replaceState({},"",`${location.pathname.slice(0,-1)}${location.search}`),';
+      // const SLASH_APPENDING_CODE = '!location.pathname.endsWith("/")&&history.replaceState({},"",`${location.pathname + "/"}${location.search}`),';
+      // if (newContent.indexOf(SLASH_REMOVAL_CODE) === -1) {
+      //   // console.warn('could not find slash removal code, svelte-kit might have been updated with different code. if so sveltejs-adapter-ipfs need to be updated');
+      // } else {
+      //   newContent = newContent.replace(SLASH_REMOVAL_CODE, SLASH_APPENDING_CODE);
+      // }
+
+      const TO_REMOVE = 'if("/"!==a.path){const t=a.path.endsWith("/");(t&&"never"===this.trailing_slash||!t&&"always"===this.trailing_slash&&!a.path.split("/").pop().includes("."))&&(a.path=t?a.path.slice(0,-1):a.path+"/",history.replaceState({},"",`${this.base}${a.path}${location.search}`))}';
+      if (newContent.indexOf(TO_REMOVE) === -1) {
+        // console.warn('could not find code to remove, svelte-kit might have been updated with different code. if so sveltejs-adapter-ipfs need to be updated');
+      } else {
+        newContent = newContent.replace(TO_REMOVE, "");
+      }
+
+
       if (removeBuiltInServiceWorkerRegistration) {
         // this transformation remove auto service worker registration, allowing you to provide your own
         const SERVICE_WORKER_REGISTRATION_CODE = '"serviceWorker"in navigator&&navigator.serviceWorker.register("/service-worker.js");';
@@ -159,13 +195,13 @@ function fixPages(options) {
 
   if (injectPagesInServiceWorker) {
     const filePath = path.join(pages, 'service-worker.js');
-    const content = fs.readFileSync(filePath).toString();
-    const newContent = content.replace('"_INJECT_PAGES_"', `"${pageURLs.join('","')}"`)
-    fs.writeFileSync(filePath, newContent);
+    try {
+      const content = fs.readFileSync(filePath).toString();
+      const newContent = content.replace('"_INJECT_PAGES_"', `"${pageURLs.join('","')}"`)
+      fs.writeFileSync(filePath, newContent);
+    } catch (e) {
+      console.error(`could not update service worker`);
+    }
   }
 
-}
-
-module.exports = {
-  fixPages
 }
