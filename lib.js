@@ -165,7 +165,7 @@ export function fixPages(options) {
     newIndexHTMLContent.slice(0, firstScript) +
     `${windowBaseScript}` +
     `${linkReloadScript}` +
-    `${debugScript}`
+    `${debugScript}` +
       newIndexHTMLContent.slice(firstScript);
 
 
