@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs-extra';
 import path from 'path';
 // import slash from 'slash';
 
@@ -45,7 +45,7 @@ const traverse = function (
 
 
 export function fixPages(options) {
-  const {pages, assets, removeBuiltInServiceWorkerRegistration, injectPagesInServiceWorker} = options;
+  const {pages, assets, removeBuiltInServiceWorkerRegistration, injectPagesInServiceWorker, injectDebugConsole} = options;
 
   const filtered = traverse(pages).filter((file) => file.name === 'index.html');
 
@@ -132,11 +132,34 @@ export function fixPages(options) {
       .replace(reBase, `{"base": window.BASE`);
 
 
+      let debugScript = '';
+      if (injectDebugConsole) {
+        fs.ensureDirSync(path.join(pages, 'scripts'));
+        const erudaPath = path.join(pages, 'scripts', 'eruda.js');
+        if (!fs.existsSync(erudaPath)) {
+          fs.copyFileSync(path.join(__dirname, 'scripts', 'eruda.js'), erudaPath);
+        }
+        debugScript = `
+      <script>
+        (function () {
+          if (!!/\\?_d_eruda/.test(window.location) || !!/&_d_eruda/.test(window.location)) {
+            var src = '${baseHref}scripts/eruda.js';
+            window._debug = true;
+            document.write('<scr' + 'ipt src="' + src + '"></scr' + 'ipt>');
+            document.write('<scr' + 'ipt>eruda.init();</scr' + 'ipt>');
+          }
+        })();
+      </script>
+  `;
+      }
+
+
     const firstScript = newIndexHTMLContent.indexOf('<script');
     newIndexHTMLContent =
     newIndexHTMLContent.slice(0, firstScript) +
     `${windowBaseScript}` +
     `${linkReloadScript}` +
+    `${debugScript}`
       newIndexHTMLContent.slice(firstScript);
 
 

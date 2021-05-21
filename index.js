@@ -6,9 +6,10 @@ import {fixPages} from './lib.js';
  *   fallback?: string;
  *   removeBuiltInServiceWorkerRegistration?: boolean;
  *   injectPagesInServiceWorker?: boolean;
+ *   injectDebugConsole?: boolean;
  * }} [opts]
  */
-export default function ({ pages = 'build', assets = pages, fallback = null, removeBuiltInServiceWorkerRegistration = false, injectPagesInServiceWorker = false  } = {}) {
+export default function ({ pages = 'build', assets = pages, fallback = null, removeBuiltInServiceWorkerRegistration = false, injectPagesInServiceWorker = false, injectDebugConsole = false  } = {}) {
 	/** @type {import('@sveltejs/kit').Adapter} */
 	const adapter = {
 		name: 'sveltejs-adapter-ipfs',
@@ -23,7 +24,7 @@ export default function ({ pages = 'build', assets = pages, fallback = null, rem
 				dest: pages
 			});
 
-      fixPages({pages, assets, removeBuiltInServiceWorkerRegistration, injectPagesInServiceWorker});
+      fixPages({pages, assets, removeBuiltInServiceWorkerRegistration, injectPagesInServiceWorker, injectDebugConsole});
 		}
 	};
 
