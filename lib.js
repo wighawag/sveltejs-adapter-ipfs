@@ -88,7 +88,7 @@ export function fixPages(options) {
     const pageIndexHTMLURLPath = slash(page.relativePath);
     const pageURLPath = path.dirname(pageIndexHTMLURLPath);
     let numSegment = 0;
-    let baseHref = '';
+    let baseHref = './';
     if (pageURLPath != '' && pageURLPath != '.' && pageURLPath != './') {
       const numSlashes = pageURLPath.split('/').length - 1;
       numSegment ++;
