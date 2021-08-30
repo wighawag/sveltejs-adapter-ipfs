@@ -1,20 +1,14 @@
 import {fixPages} from './lib.js';
-/**
- * @param {{
- *   pages?: string;
- *   assets?: string;
- *   fallback?: string;
- *   removeBuiltInServiceWorkerRegistration?: boolean;
- *   injectPagesInServiceWorker?: boolean;
- *   injectDebugConsole?: boolean;
- * }} [opts]
- */
+
+/** @type {import('.')} */
 export default function ({ pages = 'build', assets = pages, fallback = null, removeBuiltInServiceWorkerRegistration = false, injectPagesInServiceWorker = false, injectDebugConsole = false  } = {}) {
-	/** @type {import('@sveltejs/kit').Adapter} */
 	const adapter = {
 		name: 'sveltejs-adapter-ipfs',
 
-		async adapt(utils) {
+    	async adapt({ utils }) {
+			utils.rimraf(assets);
+			utils.rimraf(pages);
+
 			utils.copy_static_files(assets);
 			utils.copy_client_files(assets);
 
@@ -24,7 +18,7 @@ export default function ({ pages = 'build', assets = pages, fallback = null, rem
 				dest: pages
 			});
 
-      fixPages({pages, assets, removeBuiltInServiceWorkerRegistration, injectPagesInServiceWorker, injectDebugConsole});
+      		fixPages({pages, assets, removeBuiltInServiceWorkerRegistration, injectPagesInServiceWorker, injectDebugConsole});
 		}
 	};
 

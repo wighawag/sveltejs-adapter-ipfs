@@ -1,9 +1,12 @@
-declare function plugin(options: {
-  pages?: string;
-  assets?: string;
-  fallback?: string;
+import { Adapter } from '@sveltejs/kit';
+
+interface AdapterOptions {
+	pages?: string;
+	assets?: string;
+	fallback?: string;
   removeBuiltInServiceWorkerRegistration?: boolean;
   injectPagesInServiceWorker?: boolean;
-}): import('@sveltejs/kit').Adapter;
+}
 
+declare function plugin(options?: AdapterOptions): Adapter;
 export = plugin;
