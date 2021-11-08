@@ -180,14 +180,19 @@ export function fixPages(options) {
       const content = fs.readFileSync(filePath).toString();
       let newContent = content;
 
-      // old code for old svelte-kit
-      // const find = "\"/_app";
-      // const re = new RegExp(find, 'g');
-      // newContent = newContent.replace(re, 'window.BASE + "/_app')
+      {
+        // old and new version use that :
+        const find = "\"/_app";
+        const re = new RegExp(find, 'g');
+        newContent = newContent.replace(re, 'window.BASE + "/_app')
+      }
 
-      const find = "`/_app";
-      const re = new RegExp(find, 'g');
-      newContent = newContent.replace(re, '`${window.BASE}/_app');
+      {
+        // at some version this was needed
+        const find = "`/_app";
+        const re = new RegExp(find, 'g');
+        newContent = newContent.replace(re, '`${window.BASE}/_app');
+      }
 
       // fix transformation
       const BROKEN = 'history.replaceState({},"",`${a.path}${location.search}`)';
