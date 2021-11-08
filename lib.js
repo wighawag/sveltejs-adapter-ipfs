@@ -137,6 +137,11 @@ export function fixPages(options) {
       .replace(reDynamicImport, 'import("' + baseHref)
       .replace(reBase, `{"base": window.BASE`);
 
+    if (removeBuiltInServiceWorkerRegistration) {
+      // with new version of svelte-kit the worker registration is done in the index.html
+      newIndexHTMLContent = newIndexHTMLContent.replace(`navigator.serviceWorker.register('/service-worker.js');`, `//navigator.serviceWorker.register('/service-worker.js');`);
+    }
+
 
       let debugScript = '';
       if (injectDebugConsole) {
