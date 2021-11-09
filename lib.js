@@ -50,8 +50,8 @@ const traverse = function (
 };
 
 
-export function fixPages(options) {
-  const {pages, assets, removeBuiltInServiceWorkerRegistration, injectPagesInServiceWorker, injectDebugConsole} = options;
+export async function fixPages(options) {
+  const {pages, assets, callbacks, copyBeforeSourceMapRemoval, removeBuiltInServiceWorkerRegistration, removeSourceMap, injectPagesInServiceWorker, injectDebugConsole} = options;
 
   const filtered = traverse(pages).filter((file) => file.name === 'index.html');
 
@@ -266,6 +266,33 @@ export function fixPages(options) {
     } catch (e) {
       console.error(`could not update service worker`);
     }
+  }
+
+  if (callbacks && callbacks.preSourceMapRemoval) {
+    await callbacks.preSourceMapRemoval({assets, pages});
+  }
+
+  if (copyBeforeSourceMapRemoval) {
+    fs.copySync(pages, path.join(copyBeforeSourceMapRemoval, pages));
+    if (pages !== assets) {
+      fs.copySync(assets, path.join(copyBeforeSourceMapRemoval, assets));
+    }
+  }
+
+  if (removeSourceMap) {
+    let filtered = traverse(pages).filter((file) => file.name.endsWith('.map'));
+    if (pages !== assets) {
+      filtered = filtered.concat(traverse(assets).filter((file) => file.name.endsWith('.map')))
+    }
+    for (const file of filtered) {
+      // fs.moveSync(path.join(pages, file.relativePath), path.join(moveSourceMap, file.relativePath));
+      fs.removeSync(path.join(pages, file.relativePath));
+    }
+
+  }
+
+  if (callbacks && callbacks.end) {
+    await callbacks.end({assets, pages});
   }
 
 }

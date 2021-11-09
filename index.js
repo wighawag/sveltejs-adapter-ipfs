@@ -1,7 +1,7 @@
 import {fixPages} from './lib.js';
 
 /** @type {import('.')} */
-export default function ({ pages = 'build', assets = pages, fallback = null, removeBuiltInServiceWorkerRegistration = false, injectPagesInServiceWorker = false, injectDebugConsole = false  } = {}) {
+export default function ({ pages = 'build', assets = pages, fallback = null, callbacks = undefined, copyBeforeSourceMapRemoval = undefined, removeSourceMap = false, removeBuiltInServiceWorkerRegistration = false, injectPagesInServiceWorker = false, injectDebugConsole = false  } = {}) {
 	const adapter = {
 		name: 'sveltejs-adapter-ipfs',
 
@@ -18,7 +18,7 @@ export default function ({ pages = 'build', assets = pages, fallback = null, rem
 				dest: pages
 			});
 
-      		fixPages({pages, assets, removeBuiltInServiceWorkerRegistration, injectPagesInServiceWorker, injectDebugConsole});
+      await fixPages({pages, assets, callbacks, copyBeforeSourceMapRemoval, removeSourceMap, removeBuiltInServiceWorkerRegistration, injectPagesInServiceWorker, injectDebugConsole});
 		}
 	};
 
