@@ -273,6 +273,7 @@ export async function fixPages(options) {
   }
 
   if (copyBeforeSourceMapRemoval) {
+    fs.emptyDirSync(copyBeforeSourceMapRemoval);
     fs.copySync(pages, path.join(copyBeforeSourceMapRemoval, pages));
     if (pages !== assets) {
       fs.copySync(assets, path.join(copyBeforeSourceMapRemoval, assets));
