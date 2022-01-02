@@ -1,6 +1,6 @@
 {
   "name": "sveltejs-adapter-ipfs",
-  "version": "0.1.10",
+  "version": "0.2.0",
   "type": "module",
   "main": "index.js",
   "exports": {
@@ -9,16 +9,17 @@
   "types": "index.d.ts",
   "dependencies": {
     "fs-extra": "^10.0.0",
-    "slash": "^4.0.0"
+    "slash": "^4.0.0",
+    "tiny-glob": "^0.2.9"
   },
   "devDependencies": {
-    "@sveltejs/kit": "^1.0.0-next.159",
+		"@sveltejs/kit": "^1.0.0-next.212",
     "@types/fs-extra": "^9.0.11",
-		"playwright-chromium": "^1.10.0",
+		"playwright-chromium": "^1.17.0",
 		"port-authority": "^1.1.2",
-		"sirv": "^1.0.12",
-		"svelte": "^3.40.0",
-    "uvu": "^0.5.1"
+		"sirv": "^1.0.19",
+		"svelte": "^3.44.2",
+    "uvu": "^0.5.2"
   },
   "scripts": {
     "lint": "eslint --ignore-path .gitignore \"**/*.{ts,js,svelte}\" && npm run check-format",

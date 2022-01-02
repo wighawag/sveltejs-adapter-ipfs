@@ -165,6 +165,7 @@ export async function fixPages(options) {
       }
 
 
+      // TODO handle case where there is zero script tag
     const firstScript = newIndexHTMLContent.indexOf('<script');
     newIndexHTMLContent =
     newIndexHTMLContent.slice(0, firstScript) +
