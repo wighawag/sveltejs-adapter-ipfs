@@ -19,6 +19,137 @@ function slash(path) {
 	return path.replace(/\\/g, '/');
 }
 
+// TODO reimplement : https://github.com/wighawag/snowpack-plugin-ipfs/blob/main/src/lib.ts
+
+// if network error emitter or inject ipfs gateway loading error
+// do the following :
+// - include <script> tag to catch errr (in head)
+/*
+    <!-- Add network Emitter -->
+    <script>
+      window.netErrorList = [];
+      window.network = new EventTarget();
+      window.netError = (event) => {netErrorList.push(event);network.dispatchEvent(new CustomEvent('error',{detail: event}));};
+    </script>
+*/
+// - add onerror= on all link preload and stylesheet (in head), like this :
+/*
+
+    <link rel="stylesheet" href="./_app/assets/start-d977ffc4.css" onerror="netError(event)">
+		<link rel="stylesheet" href="./_app/assets/MailingList-282876ba.css" onerror="netError(event)">
+		<link rel="modulepreload" href="./_app/start-a1142b7a.js" onerror="netError(event)">
+		<link rel="modulepreload" href="./_app/chunks/vendor-8f597b55.js" onerror="netError(event)">
+		<link rel="modulepreload" href="./_app/chunks/paths-28a87002.js" onerror="netError(event)">
+		<link rel="modulepreload" href="./_app/pages/__layout.svelte-514fd1d8.js" onerror="netError(event)">
+		<link rel="modulepreload" href="./_app/chunks/MailingList-f6216b4c.js" onerror="netError(event)">
+		<link rel="modulepreload" href="./_app/chunks/application-c21ae1e1.js" onerror="netError(event)">
+		<link rel="modulepreload" href="./_app/pages/index.svelte-06dc1464.js" onerror="netError(event)">
+		<link rel="modulepreload" href="./_app/chunks/stores-7545cfca.js" onerror="netError(event)">
+*/
+
+// if inject ipfs gateway loading error
+// do the following :
+// - add logic for loading new ipfs gateway
+/*
+<!-- script to handle ipfs loading -->
+    <script>
+      window.getGatewayLink = function() {
+          return fetch('https://cloudflare-eth.com', {method: "POST", body: JSON.stringify({jsonrpc: "2.0", id: "3", method: "eth_call", params:[{to:"0x4976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41", data:"0xbc1c58d1${hash}"}, "latest"]})}).then(v=>v.json()).then((json) => {
+            if (json.error) {
+              throw json.error;
+            }
+            const result = json.result;
+            const hash = result && result.slice(130, 134).toLowerCase() === 'e301' && result.slice(134, 206);
+            if (hash) {
+              const a = 'abcdefghijklmnopqrstuvwxyz234567';
+              const h = new Uint8Array(hash.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)));
+              const l = 36;
+              let b = 0;
+              let v = 0;
+              let o = '';
+              for (let i = 0; i < l; i++) {
+                v = (v << 8) | h[i];
+                b += 8;
+                while (b >= 5) {
+                  o += a[(v >>> (b - 5)) & 31];
+                  b -= 5;
+                }
+              }
+              if (b > 0) {
+                o += a[(v << (5 - b)) & 31];
+              }
+              const url = 'https://b' + o + '.ipfs.dweb.link';
+              return url;
+            }
+          }).catch((e) => {
+            console.error(e)
+            return "https://duckduckgo.com"
+          });
+        }
+    </script>
+*/
+// - add style tag for buttons (in head)
+/*
+    <!-- inject style for ipfs gateway failure notice -->
+    <style>
+      .gateway-failure-button {
+        cursor:pointer;--tw-border-opacity: 1;border-color: rgb(239 68 68);border-width: 2px;border-radius: 16px;width: 6rem;height: 3rem;margin: 1rem;padding: 0;-webkit-appearance: button;background-color:transparent;background-image:none;color:inherit;
+      }
+      .gateway-failure-button:hover {
+        border-color: rgb(239 68 68);background-color: rgb(239 68 68);color: rgb(239 200 200);;
+      }
+    </style>
+*/
+// - add script tag at end of body to handle error and show modal
+/*
+<!-- Modal -->
+<script>
+  let modal;
+  function onError(event) {
+    if (modal) {
+      return;
+    }
+    modal = document.createElement('div', {});
+    modal.id = '__modal__';
+    modal.style =
+      'position:fixed;z-index:999;padding-top:100px;left:0;top: 0;width:100%;height:100%;overflow: auto;background-color: rgb(0,0,0);background-color:rgba(0,0,0,0.4);';
+    const pinata = true;
+    let message = 'The gateway is having issue to load the website.';
+    if (pinata) {
+      message = 'Pinata gateway do not support modern webapp and their caching strategy unfortunately';
+    }
+    modal.innerHTML = `
+    <div style="position: fixed; text-align: center; top: 0;background-color: rgb(254 226 226);width: 100%;border-bottom-right-radius: 0.5rem;border-bottom-left-radius: 0.5rem;">
+      <div style="padding: 2px 16px;background-color: rgb(254 202 202);color:rgb(239 68 68);">
+        <span id="__ipfs_close__" style="cursor: pointer;color: rgb(239 68 68);float: right;font-size: 28px;font-weight: bold;">&times;</span>
+        <h2>IPFS Gateway Failure</h2>
+      </div>
+      <div style="padding: 2px 16px;">
+        <p>${message}</p>
+        <p>Please try with another gateway</p>
+      </div>
+      <div style="padding: 2px 16px; min-height: 6em;background-color: rgb(254 202 202);color: rgb(239 68 68); display: flex;align-items: center;justify-content: center;">
+        <button id="__ipfs_io__" class="gateway-failure-button">Use ipfs.io</button>
+      </div>
+    </div>
+    `;
+    document.body.appendChild(modal);
+    document.getElementById('__ipfs_close__').onclick = () => {
+      document.body.removeChild(modal);
+    };
+    document.getElementById('__ipfs_io__').onclick = () => {
+      // document.body.removeChild(modal);
+      getGatewayLink().then((url) => location.assign(url + location.pathname + location.search + location.hash))
+    };
+  }
+  if (netErrorList.length > 0) {
+    onError(netErrorList[0]);
+  }
+  network.addEventListener('error', onError);
+</script>
+*/
+
+
 const traverse = function (
   dir,
   result,
