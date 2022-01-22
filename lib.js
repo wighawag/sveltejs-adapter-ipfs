@@ -360,6 +360,20 @@ export async function fixPages(options) {
         }
       }
       fs.writeFileSync(filePath, newContent);
+    } else if (jsFile.relativePath.startsWith('pages/')) {
+
+      // handle href reset to use window.BASE:
+      // (should be handled by start- js file as it is aware of the base here, TODO need to report on svelte-kit repo)
+
+      const filePath = path.join(assets, '_app', jsFile.relativePath);
+      // console.log({name: jsFile.name, filePath})
+      const content = fs.readFileSync(filePath).toString();
+      let newContent = content;
+
+      const find = "\"href\",\"\/";
+      const re = new RegExp(find, 'g');
+      newContent = newContent.replace(re, '"href",window.BASE + "/')
+      fs.writeFileSync(filePath, newContent);
     }
 
   }
