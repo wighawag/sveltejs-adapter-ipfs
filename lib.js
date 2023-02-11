@@ -295,11 +295,7 @@ function old_js_fix(args) {
 
 function old_pages_fix(args) {
 	const { pages, options } = args;
-	const {
-		removeBuiltInServiceWorkerRegistration,
-		injectDebugConsole,
-		replacePrerenderedAbsolutePath
-	} = options;
+	const { removeBuiltInServiceWorkerRegistration, injectDebugConsole } = options;
 
 	const filtered = traverse(pages).filter((file) => file.name === 'index.html');
 
@@ -375,16 +371,13 @@ function old_pages_fix(args) {
 		const findBase = `{"base":""`;
 		const reBase = new RegExp(findBase, 'g');
 
-		let newIndexHTMLContent = indexHTMLContent;
-		if (replacePrerenderedAbsolutePath) {
-			newIndexHTMLContent = newIndexHTMLContent
-				.replace(reSrc, 'src="' + baseHref)
-				.replace(reHref, 'href="' + baseHref)
-				.replace(reContent, 'content="' + baseHref)
-				.replace(reFromImport, 'from "' + baseHref)
-				.replace(reDynamicImport, 'import("' + baseHref)
-				.replace(reBase, `{"base": window.BASE`);
-		}
+		let newIndexHTMLContent = indexHTMLContent
+			.replace(reSrc, 'src="' + baseHref)
+			.replace(reHref, 'href="' + baseHref)
+			.replace(reContent, 'content="' + baseHref)
+			.replace(reFromImport, 'from "' + baseHref)
+			.replace(reDynamicImport, 'import("' + baseHref)
+			.replace(reBase, `{"base": window.BASE`);
 
 		if (removeBuiltInServiceWorkerRegistration) {
 			// with new version of svelte-kit the worker registration is done in the index.html
@@ -453,7 +446,8 @@ function new_mode(args) {
 		removeSourceMap,
 		injectPagesInServiceWorker,
 		injectDebugConsole,
-		oldMode
+		oldMode,
+		replacePrerenderedAbsolutePath
 	} = options;
 
 	// get paths- file
@@ -536,14 +530,16 @@ function new_mode(args) {
 		const findDynamicImport = 'import\\("/';
 		const reDynamicImport = new RegExp(findDynamicImport, 'g');
 
-		// build still use "/" for url when building static page
-		let newIndexHTMLContent = indexHTMLContent
-			.replace(reSrc, 'src="' + baseHref + '/')
-			.replace(reSrcSet, 'srcset="' + baseHref + '/')
-			.replace(reHref, 'href="' + baseHref + '/')
-			.replace(reContent, 'content="' + baseHref + '/')
-			.replace(reFromImport, 'from "' + baseHref + '/')
-			.replace(reDynamicImport, 'import("' + baseHref + '/');
+		let newIndexHTMLContent = indexHTMLContent;
+		if (replacePrerenderedAbsolutePath) {
+			newIndexHTMLContent = newIndexHTMLContent
+				.replace(reSrc, 'src="' + baseHref + '/')
+				.replace(reSrcSet, 'srcset="' + baseHref + '/')
+				.replace(reHref, 'href="' + baseHref + '/')
+				.replace(reContent, 'content="' + baseHref + '/')
+				.replace(reFromImport, 'from "' + baseHref + '/')
+				.replace(reDynamicImport, 'import("' + baseHref + '/');
+		}
 
 		let debugScript = '';
 		if (injectDebugConsole) {
