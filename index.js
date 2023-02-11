@@ -68,12 +68,14 @@ See https://kit.svelte.dev/docs/page-options#prerender for more details`
 				await builder.generateFallback(path.join(pages, fallback));
 			}
 
-			// before prcompress or after ?
-			await fixPages({
-				pages,
-				assets,
-				options
-			});
+			// before precompress or after ?
+			if (!options.ipfsFixDisabled) {
+				await fixPages({
+					pages,
+					assets,
+					options
+				});
+			}
 
 			if (precompress) {
 				builder.log.minor('Compressing assets and pages');
