@@ -1,5 +1,7 @@
 # sveltejs-adapter-ipfs
 
+See the demo repo on why it is needed : https://github.com/bug-reproduction/svelte-kit-static-ipfs/tree/fixes#fixes
+
 Adapter for Svelte apps that prerenders your entire site as a collection of static files with support for IPFS.
 
 This is based on adapter-static but add a post-processing step that do the following :
