@@ -1,6 +1,6 @@
 {
 	"name": "sveltejs-adapter-ipfs",
-	"version": "0.4.4",
+	"version": "0.4.5",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/wighawag/sveltejs-adapter-ipfs"
@@ -16,6 +16,8 @@
 	},
 	"types": "index.d.ts",
 	"files": [
+		"README.md",
+		"ipfs_fixes",
 		"index.js",
 		"lib.js",
 		"index.d.ts",

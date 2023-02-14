@@ -1,6 +1,10 @@
 import path from 'path';
 import { platforms } from './platforms.js';
-import { fixPages } from './lib.js';
+import { inject_base } from './ipfs_fixes/inject_base.cjs';
+import { inject_base_in_paths_file } from './ipfs_fixes/inject_base_in_paths_file.cjs';
+import { inject_base_in_singletons_file } from './ipfs_fixes/inject_base_in_singletons_file.cjs';
+import { relativize_pages } from './ipfs_fixes/relativize_pages.cjs';
+import { relativize_js } from './ipfs_fixes/relativize_js.cjs';
 
 /** @type {import('.').default} */
 export default function (options) {
@@ -70,11 +74,14 @@ See https://kit.svelte.dev/docs/page-options#prerender for more details`
 
 			// before precompress or after ?
 			if (!options.ipfsFixDisabled) {
-				await fixPages({
-					pages,
-					assets,
-					options
-				});
+				if (pages !== assets) {
+					throw new Error(`pages need to be same folder of assets for now`);
+				}
+				inject_base(pages);
+				inject_base_in_paths_file(assets);
+				inject_base_in_singletons_file(assets);
+				relativize_js(assets);
+				relativize_pages(pages);
 			}
 
 			if (precompress) {

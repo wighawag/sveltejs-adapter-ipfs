@@ -4,33 +4,49 @@ Adapter for Svelte apps that prerenders your entire site as a collection of stat
 
 This is based on adapter-static but add a post-processing step that do the following :
 
-- for all index.html (fix : https://github.com/sveltejs/kit/issues/595)
-  - replace absolute link with their relative equivalent (corresponding to the depth of the index.html)
-  - inject js script to generate the base path (folder on which the website is hosted) dynamically and asign it to `window.BASE`
-  - use `window.BASE` for the base option passed to `start`
-  - inject a script so all links in the header use full url, this allow favicon to work even after navigation
+It replace every absolute path to relative one based on the index.html position in the file system
 
-- for the `start-<hash>.js` script:
-  <!-- - fix https://github.com/sveltejs/kit/issues/1476 by prepending `router.base` fix: https://github.com/sveltejs/kit/issues/1476-->
-  - remove trailingSLashes check (TODO test with trailingSlash: ignore)
-  - allow override service worker registration to support relative path (fix: https://github.com/sveltejs/kit/issues/922)
+Here are the values it prepend
 
-- for all css file (fix: https://github.com/sveltejs/kit/issues/1477)
-  - replace absolute `url(...)` to relative path (relative to css file)
+- for the root index.html, the value would be `.`
+- for the blog/index.html, the value would be `..`
+- for the blog/1/index.html, the value would be `../..`
 
-- inject pages in service worker so service worker can cache them (fix: https://github.com/sveltejs/kit/issues/923)
+this is done via [ipfs_fixes/relativize_pages.cjs](ipfs_fixes/relativize_pages.cjs)
 
+We also need to also relativize call to server function, this is done by [ipfs_fixes/relativize_js.cjs](ipfs_fixes/relativize_js.cjs) but is not full proof as some `fetch` call are renamed.
+Svelte kit need to ensure the base (from `$app/paths`) is prepended for every server route fetch
 
-Some of these are not specific to ipfs but this also illustrate what is missing in svelte kit
+At runtime (after hydration), we are in a different context though and we want the base path (from `$app/paths`) to be absolute so it works past navigation.
+This applies to both `base` and `assets`. The way to achieve that is to simply set them at runtime, (the most early possible)
 
+For that we use the following: `window.BASE = location.pathname.split('/').slice(0, -"${RELBASE}".split('..').length).join('/');`
 
-# DEMO
+This is done via [ipfs_fixes/inject_base.cjs](ipfs_fixes/inject_base.cjs)
 
-repo : https://github.com/wighawag/sveltekit-ipfs-demo
+This also inject the assets value via
 
+```ts
+  start({
+    assets: window.BASE,
+    env: {},
+    ...
+  });
+```
 
-Hosted :
+We also then need to make use of window.BASE in the runtime for the base, which is hardocded in chunks/paths-....js or sometime chunks/singletons-....js
 
-on root path: https://bafybeifzv5mf7s5ccs6ah2ozdlag5irxpzv7lax5sesxonsxsosk43pmbq.ipfs.dweb.link/
+this is done via [ipfs_fixes/inject_base_in_paths_file.cjs](ipfs_fixes/inject_base_in_paths_file.cjs) and [ipfs_fixes/inject_base_in_singletons_file.cjs](ipfs_fixes/inject_base_in_singletons_file.cjs)
 
-on hash path: https://cloudflare-ipfs.com/ipfs/bafybeifzv5mf7s5ccs6ah2ozdlag5irxpzv7lax5sesxonsxsosk43pmbq/
+## link issues
+
+now it would be great if we could still reference page link using absolute links like `href="/about/"`
+but if we have to do the following instead, that is ok : `` href={`${base}/about/`} ``
+
+Unfortunately the latter is not sufficient as vite/sveltekit will hardcode the result at build time to `/about/` because it detect that `base` is a constant.
+
+To avoid that best is to use a function that trick the compiler that it might not always be the same and so we can get aroudn with
+
+```svelte
+<a href={`pathname(/about/)`}>About></a>
+```
