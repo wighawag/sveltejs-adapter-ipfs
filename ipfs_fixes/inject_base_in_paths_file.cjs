@@ -4,8 +4,8 @@ const { traverse } = require('./lib.cjs');
 
 function inject_base_in_paths_file(assets) {
 	// get paths- file
-	const pathFiles = traverse(path.join(assets, '_app/immutable/chunks')).filter((file) =>
-		file.name.startsWith('paths-')
+	const pathFiles = traverse(path.join(assets, '_app/immutable/chunks')).filter(
+		(file) => file.name.startsWith('paths-') || file.name.startsWith('paths.')
 	);
 	if (pathFiles.length === 0) {
 		throw new Error(`no paths- files found`);

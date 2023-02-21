@@ -4,8 +4,8 @@ const { traverse } = require('./lib.cjs');
 
 function inject_base_in_singletons_file(assets) {
 	// get singletons- file
-	const files = traverse(path.join(assets, '_app/immutable/chunks')).filter((file) =>
-		file.name.startsWith('singletons-')
+	const files = traverse(path.join(assets, '_app/immutable/chunks')).filter(
+		(file) => file.name.startsWith('singletons-') || file.name.startsWith('singletons.')
 	);
 	if (files.length === 0) {
 		throw new Error(`no singletons- files found`);
