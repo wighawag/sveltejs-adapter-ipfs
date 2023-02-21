@@ -5,6 +5,7 @@ import { inject_base_in_paths_file } from './ipfs_fixes/inject_base_in_paths_fil
 import { inject_base_in_singletons_file } from './ipfs_fixes/inject_base_in_singletons_file.cjs';
 import { relativize_pages } from './ipfs_fixes/relativize_pages.cjs';
 import { relativize_js } from './ipfs_fixes/relativize_js.cjs';
+import { replace_assets_base_ref_in_index_html } from './ipfs_fixes/replace_assets_base_ref_in_index_html.cjs';
 
 /** @type {import('.').default} */
 export default function (options) {
@@ -79,6 +80,9 @@ See https://kit.svelte.dev/docs/page-options#prerender for more details`
 				}
 				if (!options.skipInjectBase) {
 					inject_base(pages);
+				}
+				if (!options.skipReplacementInIndexHTML) {
+					replace_assets_base_ref_in_index_html(pages);
 				}
 
 				if (!options.skipSingletonsAndPathsFiles) {
