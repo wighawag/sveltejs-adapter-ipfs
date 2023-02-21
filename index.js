@@ -78,8 +78,11 @@ See https://kit.svelte.dev/docs/page-options#prerender for more details`
 					throw new Error(`pages need to be same folder of assets for now`);
 				}
 				inject_base(pages);
-				inject_base_in_paths_file(assets);
-				inject_base_in_singletons_file(assets);
+				if (options.skipSingletonsAndPathsFiles) {
+					inject_base_in_paths_file(assets);
+					inject_base_in_singletons_file(assets);
+				}
+
 				relativize_js(assets);
 				relativize_pages(pages);
 			}
