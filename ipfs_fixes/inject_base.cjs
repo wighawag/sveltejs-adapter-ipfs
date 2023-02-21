@@ -40,6 +40,8 @@ function inject_base(pages) {
 
 		// set the assets path to be the dynamic base
 		indexHTMLContent = indexHTMLContent.replace('assets: "",', `assets: window.BASE,`);
+		// set the base path to be the dynamic base
+		indexHTMLContent = indexHTMLContent.replace('base: "",', `base: window.BASE,`);
 
 		fs.writeFileSync(indexHTMLPath, indexHTMLContent);
 	}
